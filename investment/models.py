@@ -30,8 +30,11 @@ class Etf(models.Model):
         return f"{self.ticker}"
 
     def average_usd_cost(self):
+        average_cost = Decimal('0')
         data = self.purchases.aggregate(average_cost=models.Avg('usd_price'))
-        return Decimal(data['average_cost']).quantize(Decimal('1.00'))
+        if data['average_cost'] is not None:
+            average_cost = Decimal(data['average_cost'])
+        return average_cost.quantize(Decimal('1.00'))
 
 
 class Purchase(models.Model):
