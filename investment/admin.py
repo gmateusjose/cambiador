@@ -13,6 +13,7 @@ class EtfAdmin(admin.ModelAdmin):
         'morningstar_rating',
         'average_usd_cost',
     ]
+    list_filter = ['morningstar_rating']
 
 
 @admin.register(Purchase)
