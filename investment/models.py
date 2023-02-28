@@ -20,7 +20,7 @@ class Etf(models.Model):
     sharpe_ratio_3yr = models.DecimalField(
         max_digits=5,
         decimal_places=3,
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        validators=[MinValueValidator(-1), MaxValueValidator(1)],
     )
     morningstar_rating = models.SmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
