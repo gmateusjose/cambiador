@@ -8,12 +8,21 @@ class Budget(models.Model):
     def __str__(self):
         return self.description
 
-    def total(self):
+    def total_amount(self):
         return self.expenses.aggregate(total=models.Sum('amount'))['total']
+
+    def shared_amount(self):
+        return self.expenses.filter(
+            shared=True
+        ).aggregate(total=models.Sum('amount'))['total']
 
 
 class BudgetExpense(models.Model):
-    budget = models.ForeignKey("budget.Budget", on_delete=models.PROTECT, related_name="expenses")
+    budget = models.ForeignKey(
+        "budget.Budget",
+        on_delete=models.PROTECT,
+        related_name="expenses",
+    )
     description = models.CharField(max_length=20)
     spent_on = models.DateTimeField(default=timezone.now)
     amount = models.DecimalField(max_digits=8, decimal_places=2)

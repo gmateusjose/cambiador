@@ -10,6 +10,6 @@ class BudgetExpenseInline(admin.TabularInline):
 
 @admin.register(Budget)
 class BudgetAdmin(admin.ModelAdmin):
-    list_display = ['description', 'total']
+    list_display = ['description', 'total_amount', 'shared_amount']
     search_fields = ['description']
     inlines = [BudgetExpenseInline]
