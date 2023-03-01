@@ -6,4 +6,3 @@
 
 - Install django admin interface
 - Prepare correct deploy
-- Use my domain
