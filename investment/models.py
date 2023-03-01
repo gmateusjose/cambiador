@@ -38,8 +38,12 @@ class Etf(models.Model):
 
 
 class Purchase(models.Model):
-    etf = models.ForeignKey("investment.Etf", on_delete=models.PROTECT, related_name="purchases")
     purchased_at = models.DateTimeField(default=timezone.now)
+    etf = models.ForeignKey(
+        "investment.Etf",
+        on_delete=models.PROTECT,
+        related_name="purchases",
+    )
     usd_price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -59,3 +63,31 @@ class Dividend(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(0)],
     )
+
+
+# class Currency(models.Model):
+#     name = models.CharField(max_length=10, primary_key=True)
+
+#     def __str__(self):
+#         return f"{self.name}"
+
+#     def average_cost(self):
+#         average_cost = Decimal('0')
+#         data = self.purchases.aggregate(average_cost=models.Avg('brl_price'))
+#         if data['average_cost'] is not None:
+#             average_cost = Decimal(data['average_cost'])
+#         return average_cost.quantize(Decimal('1.00'))
+
+
+# class CurrencyPurchase(models.Model):
+#     purchased_at = models.DateTimeField(default=timezone.now)
+#     currency = models.ForeignKey(
+#         "investment.Currency",
+#         on_delete=models.PROTECT,
+#         related_name="purchases"
+#     )
+#     brl_price = models.DecimalField(
+#         max_digits=8,
+#         decimal_places=2,
+#         validators=[MinValueValidator(0)],
+#     )
