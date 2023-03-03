@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -30,10 +31,9 @@ class Etf(models.Model):
         return f"{self.ticker}"
 
     def average_usd_cost(self):
-        average_cost = Decimal('0')
-        data = self.purchases.aggregate(average_cost=models.Avg('usd_price'))
-        if data['average_cost'] is not None:
-            average_cost = Decimal(data['average_cost'])
+        average_cost = self.purchases.aggregate(average_cost=models.Avg('usd_price'))['average_cost']
+        if average_cost is None:
+            average_cost = Decimal('0')
         return average_cost.quantize(Decimal('1.00'))
 
 
@@ -50,6 +50,10 @@ class Purchase(models.Model):
         validators=[MinValueValidator(0)],
     )
 
+    class Meta:
+        verbose_name = "Etf Purchase"
+        verbose_name_plural = "Etf Purchases"
+
 
 class Dividend(models.Model):
     received_at = models.DateTimeField(default=timezone.now)
@@ -65,29 +69,54 @@ class Dividend(models.Model):
     )
 
 
-# class Currency(models.Model):
-#     name = models.CharField(max_length=10, primary_key=True)
+class Exchange(models.Model):
+    class Currency(models.TextChoices):
+        BRL = 'brl', 'BRL'
+        USD = 'usd', 'USD'
+        EUR = 'eur', 'EUR'
+        BTC = 'btc', 'BTC'
+        ETH = 'eth', 'ETH'
 
-#     def __str__(self):
-#         return f"{self.name}"
+    finished_at = models.DateTimeField(default=timezone.now)
+    origin = models.CharField(max_length=3, choices=Currency.choices)
+    destination = models.CharField(max_length=3, choices=Currency.choices)
+    origin_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=6,
+        validators=[MinValueValidator(0)],
+    )
+    destination_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=6,
+        validators=[MinValueValidator(0)],
+    )
+    def clean(self):
+        if self.origin == self.destination:
+            raise ValidationError('origin must not be equal to destination')
 
-#     def average_cost(self):
-#         average_cost = Decimal('0')
-#         data = self.purchases.aggregate(average_cost=models.Avg('brl_price'))
-#         if data['average_cost'] is not None:
-#             average_cost = Decimal(data['average_cost'])
-#         return average_cost.quantize(Decimal('1.00'))
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        ExchangeHistory.objects.get_or_create(origin=self.origin, destination=self.destination)
 
 
-# class CurrencyPurchase(models.Model):
-#     purchased_at = models.DateTimeField(default=timezone.now)
-#     currency = models.ForeignKey(
-#         "investment.Currency",
-#         on_delete=models.PROTECT,
-#         related_name="purchases"
-#     )
-#     brl_price = models.DecimalField(
-#         max_digits=8,
-#         decimal_places=2,
-#         validators=[MinValueValidator(0)],
-#     )
+class ExchangeHistory(models.Model):
+    origin = models.CharField(max_length=3)
+    destination = models.CharField(max_length=3)
+
+    class Meta:
+        verbose_name = "Exchange History"
+        verbose_name_plural = "Exchange Histories"
+
+    def average_amount(self):
+        average_amount = Exchange.objects.filter(
+            origin=self.origin,
+            destination=self.destination,
+        ).annotate(
+            relative_amount=models.F('destination_amount')/models.F('origin_amount')
+        ).aggregate(
+            average_amount=models.Avg('relative_amount')
+        )['average_amount']
+
+        if average_amount is None:
+            average_amount = Decimal('0')
+        return average_amount.quantize(Decimal('1.000000'))

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from investment.models import Etf, Dividend, Purchase
+from investment.models import Etf, Dividend, Purchase, Exchange, ExchangeHistory
 
 
 @admin.register(Etf)
@@ -29,3 +29,30 @@ class DividendAdmin(admin.ModelAdmin):
 
     def concluded(self, obj):
         return f"{obj.net_amount/400 * 100:.2f}%" # Goal 400 USD
+
+
+@admin.register(Exchange)
+class ExchangeAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'finished_at',
+        'origin',
+        'origin_amount',
+        'destination',
+        'destination_amount',
+    ]
+    list_filter = ['finished_at', 'origin', 'destination']
+
+
+@admin.register(ExchangeHistory)
+class ExchangeHistoryAdmin(admin.ModelAdmin):
+    list_display = ['origin', 'destination', 'average_amount']
+
+    def has_add_permission(self, *args):
+        return False
+
+    def has_change_permission(self, *args):
+        return False
+
+    def has_delete_permission(self, *args):
+        return False
